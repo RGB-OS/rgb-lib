@@ -71,5 +71,9 @@ and the state transitions of an asset transfer.
 [esplora]: https://github.com/Blockstream/esplora
 [rgb-core]: https://github.com/RGB-WG/rgb-core
 
+## Swap Demo
+
+```sh
 cargo run --example atomic_swap --features electrum
 cargo run --example user_payer --features electrum
+```
