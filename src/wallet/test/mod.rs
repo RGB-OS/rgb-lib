@@ -267,6 +267,7 @@ mod list_unspents;
 mod new;
 mod refresh;
 mod rust_only;
+mod script_receive;
 mod send;
 mod send_btc;
 mod sign_psbt;

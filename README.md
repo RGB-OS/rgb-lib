@@ -70,3 +70,6 @@ and the state transitions of an asset transfer.
 [electrs]: https://github.com/romanz/electrs
 [esplora]: https://github.com/Blockstream/esplora
 [rgb-core]: https://github.com/RGB-WG/rgb-core
+
+cargo run --example atomic_swap --features electrum
+cargo run --example user_payer --features electrum

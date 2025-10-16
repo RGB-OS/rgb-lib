@@ -2724,6 +2724,71 @@ impl Wallet {
         })
     }
 
+    /// Receive RGB assets to a custom Bitcoin script.
+    ///
+    /// This method creates an RGB invoice for receiving assets to any custom Bitcoin script,
+    /// such as P2WSH HTLC scripts, multi-signature scripts, or Taproot scripts.
+    ///
+    /// The method follows the same pattern as [`witness_receive`](Wallet::witness_receive),
+    /// creating a tracked transfer in the wallet database and generating a proper RGB invoice.
+    ///
+    /// Unlike `witness_receive` which generates a new address from the wallet, this method
+    /// uses the provided custom script. This enables advanced Bitcoin contracts while still
+    /// maintaining proper RGB transfer tracking.
+   
+    pub fn script_receive(
+        &mut self,
+        script_buf: ScriptBuf,
+        asset_id: Option<String>,
+        assignment: Assignment,
+        duration_seconds: Option<u32>,
+        transport_endpoints: Vec<String>,
+        min_confirmations: u8,
+    ) -> Result<ReceiveData, Error> {
+        info!(
+            self.logger,
+            "Receiving via custom script for asset '{:?}' with duration '{:?}'...",
+            asset_id,
+            duration_seconds
+        );
+
+        let script_pubkey = if script_buf.is_p2wpkh() || script_buf.is_p2wsh() || script_buf.is_p2tr() {
+            script_buf.clone()
+        } else {
+            let bdk_network: BdkNetwork = self.bitcoin_network().into();
+            BdkAddress::p2wsh(&script_buf, bdk_network).script_pubkey()
+        };
+
+        let beneficiary = beneficiary_from_script_buf(script_pubkey.clone());
+
+        let (recipient_id, invoice, expiration_timestamp, batch_transfer_idx) = self._receive(
+            asset_id,
+            assignment,
+            duration_seconds,
+            transport_endpoints,
+            min_confirmations,
+            beneficiary,
+            RecipientTypeFull::Witness { vout: None },
+        )?;
+
+        self.database
+            .set_pending_witness_script(DbPendingWitnessScriptActMod {
+                script: ActiveValue::Set(script_pubkey.to_hex_string()),
+                ..Default::default()
+            })?;
+
+        self.update_backup_info(false)?;
+
+        info!(self.logger, "Script receive completed");
+        Ok(ReceiveData {
+            invoice,
+            recipient_id,
+            expiration_timestamp,
+            batch_transfer_idx,
+        })
+    }
+
+
     /// Finalize a PSBT, optionally providing BDK sign options to tweak the behavior of the
     /// finalizer.
     pub fn finalize_psbt(
