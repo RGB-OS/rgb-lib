@@ -8,6 +8,7 @@ use std::{
 use rgb_lib::{
     AssetSchema, Assignment as RgbLibAssignment, BitcoinNetwork, Error as RgbLibError,
     RecipientType, TransferStatus, TransportType,
+    bitcoin::ScriptBuf,
     keys::Keys,
     wallet::{
         Address as RgbLibAddress, AssetCFA, AssetIFA, AssetNIA, AssetUDA, Assets,
@@ -397,7 +398,27 @@ impl Wallet {
             min_confirmations,
         )
     }
-
+    
+    fn script_receive(
+        &self,
+        script_hex: String,
+        asset_id: Option<String>,
+        assignment: Assignment,
+        duration_seconds: Option<u32>,
+        transport_endpoints: Vec<String>,
+        min_confirmations: u8,
+    ) -> Result<ReceiveData, RgbLibError> {
+        let script_buf = ScriptBuf::from_hex(&script_hex)
+            .map_err(|e| RgbLibError::Internal { details: e.to_string() })?;
+        self._get_wallet().script_receive(
+            script_buf,
+            asset_id,
+            assignment.into(),
+            duration_seconds,
+            transport_endpoints,
+            min_confirmations,
+        )
+    }
     fn finalize_psbt(&self, signed_psbt: String) -> Result<String, RgbLibError> {
         self._get_wallet().finalize_psbt(signed_psbt, None)
     }
